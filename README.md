@@ -8,6 +8,11 @@
   A browser extension for creating and managing slide boards powered by <a href="https://tldraw.com">tldraw</a>.
 </p>
 
+<p>
+  <img src="screen_1.png" alt="Screen 1" width="640" />
+  <img src="screen_2.png" alt="Screen 2" width="640" />
+</p>
+
 <p align="center">
   <a href="README_CN.md">简体中文</a>
 </p>
