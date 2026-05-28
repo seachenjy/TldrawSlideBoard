@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CalendarDays, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { useI18n } from '../shared/i18n'
 
 const props = defineProps<{
   dates: string[]
@@ -11,6 +12,8 @@ const emit = defineEmits<{
   (e: 'select', date: string): void
   (e: 'today'): void
 }>()
+
+const { t } = useI18n()
 
 function navigate(delta: number) {
   const idx = props.dates.indexOf(props.selectedDate)
@@ -26,15 +29,15 @@ const canNext = () => props.dates.indexOf(props.selectedDate) > 0
 
 <template>
   <div class="date-bar">
-    <button class="nav-btn" :disabled="!canPrev()" @click="navigate(1)" title="更早">
+    <button class="nav-btn" :disabled="!canPrev()" @click="navigate(1)" :title="t('earlier')">
       <ChevronLeft :size="16" />
     </button>
-    <button class="date-display" :title="`共 ${count} 个白板`" @click="$emit('today')">
+    <button class="date-display" :title="t('boardCount', { count })" @click="$emit('today')">
       <CalendarDays :size="14" />
       <span>{{ selectedDate }}</span>
       <span v-if="count > 0" class="date-count">{{ count }}</span>
     </button>
-    <button class="nav-btn" :disabled="!canNext()" @click="navigate(-1)" title="更晚">
+    <button class="nav-btn" :disabled="!canNext()" @click="navigate(-1)" :title="t('later')">
       <ChevronRight :size="16" />
     </button>
   </div>

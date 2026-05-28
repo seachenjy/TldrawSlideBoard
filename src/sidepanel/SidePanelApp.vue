@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, toRaw } from 'vue'
 import { Plus, Download, Upload, Merge } from '@lucide/vue'
+import { useI18n } from '../shared/i18n'
 import { toDateKey, listAllMetas, listMetasByDate, deleteBoard, createBoard, exportAll, importAll, updateBoardMeta } from '../shared/storage'
 import type { BoardMeta } from '../shared/types'
 import DatePanel from './DatePanel.vue'
 import BoardList from './BoardList.vue'
 import InlineEditor from './InlineEditor.vue'
 
+const { t } = useI18n()
 const selectedDate = ref(toDateKey(new Date()))
 const dates = ref<string[]>([])
 const boards = ref<BoardMeta[]>([])
@@ -98,7 +100,7 @@ function triggerImport(mode: 'merge' | 'overwrite') {
       await refreshDates()
       await refreshBoards()
     } catch {
-      alert('导入失败，请检查文件格式')
+      alert(t('importFailed'))
     } finally {
       importing.value = false
     }

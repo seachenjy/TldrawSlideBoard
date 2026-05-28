@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRaw } from 'vue'
 import { ArrowLeft, Save, Plus, Trash2, Layers, Check, Loader2 } from '@lucide/vue'
+import { useI18n } from '../shared/i18n'
 import { getSnapshot, type Editor } from 'tldraw'
 import { addSlide, deleteSlide, getBoardRecord, updateBoardMeta, updateSlideRecord } from '../shared/storage'
 import type { BoardRecord, SlideRecord } from '../shared/types'
@@ -14,6 +15,7 @@ const emit = defineEmits<{
   (e: 'back'): void
 }>()
 
+const { t } = useI18n()
 const board = ref<BoardRecord | null>(null)
 const activeSlide = ref<SlideRecord | null>(null)
 const loading = ref(true)
@@ -139,12 +141,12 @@ onBeforeUnmount(() => {
 <template>
   <div class="inline-editor">
     <div class="inline-editor__toolbar">
-      <button class="icon-btn" @click="handleBack" title="返回列表">
+      <button class="icon-btn" @click="handleBack" :title="t('backToList')">
         <ArrowLeft :size="18" />
       </button>
 
       <div class="toolbar-center">
-        <button class="slide-toggle" @click="slideExpanded = !slideExpanded" title="Slide 管理">
+        <button class="slide-toggle" @click="slideExpanded = !slideExpanded" :title="t('slideManagement')">
           <Layers :size="14" />
           <span class="slide-name">{{ activeSlide?.name ?? 'Slide' }}</span>
           <span class="slide-badge">{{ slides.length }}</span>
@@ -162,10 +164,10 @@ onBeforeUnmount(() => {
 
     <div v-if="slideExpanded" class="slide-panel">
       <div class="slide-panel__actions">
-        <button class="panel-icon-btn" title="新增 Slide" @click="handleAddSlide">
+        <button class="panel-icon-btn" :title="t('addSlide')" @click="handleAddSlide">
           <Plus :size="14" />
         </button>
-        <button class="panel-icon-btn panel-icon-btn--danger" title="删除当前 Slide" :disabled="slides.length <= 1" @click="handleDeleteSlide">
+        <button class="panel-icon-btn panel-icon-btn--danger" :title="t('deleteSlide')" :disabled="slides.length <= 1" @click="handleDeleteSlide">
           <Trash2 :size="14" />
         </button>
       </div>

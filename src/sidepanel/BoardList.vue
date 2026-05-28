@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import { Pencil, Trash2, ChevronRight } from '@lucide/vue'
+import { useI18n } from '../shared/i18n'
 import type { BoardMeta } from '../shared/types'
 
 defineProps<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   (e: 'rename', id: string, title: string): void
 }>()
 
+const { t } = useI18n()
 const editingId = ref<string | null>(null)
 const editingTitle = ref('')
 let inputEl: HTMLInputElement | null = null
@@ -43,7 +45,7 @@ function formatTime(ts: number) {
 <template>
   <div class="board-list">
     <div v-if="boards.length === 0" class="empty">
-      <span class="empty__text">暂无白板</span>
+      <span class="empty__text">{{ t('noBoards') }}</span>
     </div>
     <div v-for="board in boards" :key="board.id" class="board-item">
       <div class="board-item__main" @click="$emit('open', board.id)">
