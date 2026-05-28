@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Tldraw Slide Board",
+  "version": "0.1.0",
+  "description": "A tldraw-based browser extension for creating slide boards with daily indexing and full import/export.",
+  "permissions": ["sidePanel", "storage", "unlimitedStorage"],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open Tldraw Slide Board",
+    "default_icon": "icon.png"
+  },
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

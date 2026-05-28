@@ -1,0 +1,21 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["chrome-types"]
+  },
+  "include": [
+    "env.d.ts",
+    "vite-env.d.ts",
+    "src/**/*",
+    "src/**/*.vue",
+    "src/sidepanel/**/*",
+    "src/editor/**/*",
+    "src/shared/**/*"
+  ],
+  "exclude": ["src/**/__tests__/*"]
+}
