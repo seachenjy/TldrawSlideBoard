@@ -9,8 +9,8 @@
 </p>
 
 <p>
-  <img src="screen_1.png" alt="Screen 1" width="640" />
-  <img src="screen_2.png" alt="Screen 2" width="640" />
+  <img src="screen_1.png" alt="Screen 1" width="320" />
+  <img src="screen_2.png" alt="Screen 2" width="320" />
 </p>
 
 <p align="center">

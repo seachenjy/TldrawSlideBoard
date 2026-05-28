@@ -8,8 +8,8 @@
   基于 <a href="https://tldraw.com">tldraw</a> 的浏览器插件，用于创建和管理白板幻灯片。
 </p>
 <p>
-  <img src="screen_1.png" alt="Screen 1" width="640" />
-  <img src="screen_2.png" alt="Screen 2" width="640" />
+  <img src="screen_1.png" alt="Screen 1" width="320" />
+  <img src="screen_2.png" alt="Screen 2" width="320" />
 </p>
 <p align="center">
   <a href="README.md">English</a>
