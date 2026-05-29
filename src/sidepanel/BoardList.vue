@@ -62,7 +62,7 @@ function formatTime(ts: number) {
           />
           <div v-else class="board-item__title">{{ board.title }}</div>
           <div class="board-item__meta">
-            {{ formatTime(board.createdAt) }} · {{ board.slideCount }} slide{{ board.slideCount > 1 ? 's' : '' }}
+            {{ formatTime(board.createdAt) }}
           </div>
         </div>
         <ChevronRight :size="16" class="board-item__arrow" />

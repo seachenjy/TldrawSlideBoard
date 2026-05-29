@@ -1,8 +1,7 @@
-import { createStore, get, set, del, entries, keys, clear } from 'idb-keyval'
-import type { BoardMeta, BoardRecord, SlideRecord } from './types'
+import { createStore, get, set, del, entries, clear } from 'idb-keyval'
+import type { BoardMeta } from './types'
 
 const metaStore = createStore('tldraw-board-meta', 'board-meta')
-const slideStore = createStore('tldraw-slides', 'slides')
 
 export function toDateKey(date: Date): string {
   const y = date.getFullYear()
@@ -27,116 +26,54 @@ export async function listMetasByDate(dateKey: string): Promise<BoardMeta[]> {
   return all.filter((item) => item.dateKey === dateKey)
 }
 
-export async function getBoardRecord(boardId: string): Promise<BoardRecord | undefined> {
-  const meta = await get<BoardMeta>(boardId, metaStore)
-  if (!meta) {
-    return undefined
-  }
-  const allSlides = await entries<string, SlideRecord>(slideStore)
-  const slides = allSlides
-    .map(([, value]) => value)
-    .filter((slide) => slide.boardId === boardId)
-    .sort((a, b) => a.order - b.order)
-  return { meta, slides }
+export async function getBoardMeta(boardId: string): Promise<BoardMeta | undefined> {
+  return get<BoardMeta>(boardId, metaStore)
 }
 
-export async function createBoard(): Promise<BoardRecord> {
+export async function createBoard(): Promise<BoardMeta> {
   const now = Date.now()
-  const boardId = uid()
-  const slideId = uid()
   const meta: BoardMeta = {
-    id: boardId,
+    id: uid(),
     title: '未命名白板',
     createdAt: now,
     updatedAt: now,
     dateKey: toDateKey(new Date(now)),
-    activeSlideId: slideId,
-    slideCount: 1,
-  }
-  const slide: SlideRecord = {
-    id: slideId,
-    boardId,
-    order: 0,
-    name: 'Slide 1',
     snapshot: '',
-    createdAt: now,
-    updatedAt: now,
   }
-  await set(boardId, meta, metaStore)
-  await set(slideId, slide, slideStore)
-  return { meta, slides: [slide] }
+  await set(meta.id, meta, metaStore)
+  return meta
 }
 
 export async function updateBoardMeta(meta: BoardMeta): Promise<void> {
   await set(meta.id, meta, metaStore)
 }
 
-export async function updateSlideRecord(slide: SlideRecord): Promise<void> {
-  await set(slide.id, slide, slideStore)
-}
-
-export async function addSlide(boardId: string, order: number): Promise<SlideRecord> {
-  const now = Date.now()
-  const slide: SlideRecord = {
-    id: uid(),
-    boardId,
-    order,
-    name: `Slide ${order + 1}`,
-    snapshot: '',
-    createdAt: now,
-    updatedAt: now,
-  }
-  await set(slide.id, slide, slideStore)
-  return slide
-}
-
-export async function deleteSlide(slideId: string): Promise<void> {
-  await del(slideId, slideStore)
-}
-
 export async function deleteBoard(boardId: string): Promise<void> {
   await del(boardId, metaStore)
-  const allSlides = await entries<string, SlideRecord>(slideStore)
-  const ids = allSlides.filter(([, value]) => value.boardId === boardId).map(([key]) => key)
-  if (ids.length > 0) {
-    await Promise.all(ids.map((id) => del(id, slideStore)))
-  }
 }
 
 export async function exportAll(): Promise<Record<string, unknown>> {
   const metas = await entries<string, BoardMeta>(metaStore)
-  const slides = await entries<string, SlideRecord>(slideStore)
   return {
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
-    metas: Object.fromEntries(metas),
-    slides: Object.fromEntries(slides),
+    boards: Object.fromEntries(metas),
   }
 }
 
 export async function importAll(payload: Record<string, unknown>, mode: 'merge' | 'overwrite'): Promise<void> {
-  const metas = (payload.metas ?? {}) as Record<string, BoardMeta>
-  const slides = (payload.slides ?? {}) as Record<string, SlideRecord>
+  const boards = (payload.boards ?? {}) as Record<string, BoardMeta>
 
   if (mode === 'overwrite') {
     await clear(metaStore)
-    await clear(slideStore)
   }
 
-  for (const [key, value] of Object.entries(metas)) {
+  for (const [key, value] of Object.entries(boards)) {
     if (mode === 'merge') {
       const exists = await get(key, metaStore)
       if (exists) continue
     }
     await set(key, value, metaStore)
-  }
-
-  for (const [key, value] of Object.entries(slides)) {
-    if (mode === 'merge') {
-      const exists = await get(key, slideStore)
-      if (exists) continue
-    }
-    await set(key, value, slideStore)
   }
 }
 

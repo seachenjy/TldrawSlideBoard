@@ -9,10 +9,7 @@ const messages = {
     importOverwrite: 'Overwrite import',
     importFailed: 'Import failed. Please check the file format.',
     backToList: 'Back to list',
-    slideManagement: 'Slide management',
     save: 'Save',
-    addSlide: 'Add slide',
-    deleteSlide: 'Delete current slide',
     loading: 'Loading...',
     noBoards: 'No boards yet',
     rename: 'Rename',
@@ -20,7 +17,6 @@ const messages = {
     earlier: 'Earlier',
     later: 'Later',
     boardCount: '{count} board(s)',
-    slideCount: '{count} slide(s)',
     goToday: 'Today',
   },
   zh: {
@@ -31,10 +27,7 @@ const messages = {
     importOverwrite: '覆盖导入',
     importFailed: '导入失败，请检查文件格式',
     backToList: '返回列表',
-    slideManagement: 'Slide 管理',
     save: '保存',
-    addSlide: '新增 Slide',
-    deleteSlide: '删除当前 Slide',
     loading: '加载中...',
     noBoards: '暂无白板',
     rename: '重命名',
@@ -42,7 +35,7 @@ const messages = {
     earlier: '更早',
     later: '更晚',
     boardCount: '共 {count} 个白板',
-    slideCount: '{count} slide',
+    goToday: '今天',
   },
 } as const
 

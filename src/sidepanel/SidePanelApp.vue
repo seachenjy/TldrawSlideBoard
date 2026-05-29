@@ -36,10 +36,10 @@ function selectDate(dateKey: string) {
 }
 
 async function handleCreateBoard() {
-  const board = await createBoard()
+  const meta = await createBoard()
   await refreshCountMap()
   await refreshBoards()
-  editingBoardId.value = board.meta.id
+  editingBoardId.value = meta.id
 }
 
 function openBoard(id: string) {
