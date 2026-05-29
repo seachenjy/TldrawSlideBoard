@@ -17,16 +17,14 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const editingId = ref<string | null>(null)
 const editingTitle = ref('')
-let inputEl: HTMLInputElement | null = null
-
-function setInputRef(el: HTMLInputElement | null) {
-  inputEl = el
-}
 
 function startEdit(board: BoardMeta) {
   editingId.value = board.id
   editingTitle.value = board.title
-  nextTick(() => inputEl?.focus())
+  nextTick(() => {
+    const el = document.querySelector<HTMLInputElement>('.title-input')
+    el?.focus()
+  })
 }
 
 function commitEdit(id: string) {
@@ -52,7 +50,6 @@ function formatTime(ts: number) {
         <div class="board-item__info">
           <input
             v-if="editingId === board.id"
-            ref="inputRef"
             v-model="editingTitle"
             class="title-input"
             @blur="commitEdit(board.id)"
@@ -68,10 +65,10 @@ function formatTime(ts: number) {
         <ChevronRight :size="16" class="board-item__arrow" />
       </div>
       <div class="board-item__actions">
-        <button class="action-btn" title="重命名" @click.stop="startEdit(board)">
+        <button class="action-btn" :title="t('rename')" @click.stop="startEdit(board)">
           <Pencil :size="14" />
         </button>
-        <button class="action-btn action-btn--danger" title="删除" @click.stop="$emit('remove', board.id)">
+        <button class="action-btn action-btn--danger" :title="t('delete')" @click.stop="$emit('remove', board.id)">
           <Trash2 :size="14" />
         </button>
       </div>

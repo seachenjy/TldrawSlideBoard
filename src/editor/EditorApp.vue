@@ -1,75 +1,31 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
-import { getSnapshot, type Editor } from 'tldraw'
-import { getBoardMeta, updateBoardMeta } from '../shared/storage'
-import type { BoardMeta } from '../shared/types'
+import { onMounted, ref } from 'vue'
+import { useI18n } from '../shared/i18n'
+import { useAutoSave } from '../shared/useAutoSave'
 import TldrawVueBridge from './TldrawVueBridge.vue'
 
-const meta = ref<BoardMeta | null>(null)
-const error = ref<string | null>(null)
-const loading = ref(true)
-const saving = ref(false)
-const dirty = ref(false)
+const { t } = useI18n()
+const boardId = ref('')
 
-const editor = shallowRef<Editor | null>(null)
-const currentSnapshot = ref<Record<string, unknown> | null>(null)
-
-function parseSnapshot(raw?: string | null) {
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as Record<string, unknown>
-  } catch {
-    return null
-  }
-}
-
-async function init() {
+onMounted(() => {
   const params = new URLSearchParams(window.location.search)
   const id = params.get('id')
-  if (!id) {
-    error.value = '缺少白板参数'
-    loading.value = false
-    return
-  }
-  try {
-    const record = await getBoardMeta(id)
-    if (!record) {
-      error.value = '未找到对应白板'
-      return
-    }
-    meta.value = record
-    currentSnapshot.value = parseSnapshot(record.snapshot)
-  } catch (e) {
-    error.value = (e as Error).message
-  } finally {
-    loading.value = false
-  }
-}
+  boardId.value = id ?? ''
+})
 
-function handleMount(nextEditor: Editor) {
-  editor.value = nextEditor
-  nextEditor.store.listen(() => {
-    dirty.value = true
-  })
-}
-
-async function saveBoard() {
-  if (!editor.value || !meta.value) return
-  saving.value = true
-  try {
-    const now = Date.now()
-    const snapshot = JSON.stringify(getSnapshot(editor.value.store))
-    const updated = { ...meta.value, snapshot, updatedAt: now }
-    meta.value = updated
-    await updateBoardMeta(updated)
-    dirty.value = false
-  } finally {
-    saving.value = false
-  }
-}
+const {
+  meta,
+  loading,
+  saving,
+  dirty,
+  currentSnapshot,
+  error,
+  handleMount,
+  saveBoard,
+} = useAutoSave(boardId)
 
 async function handleExportCurrentBoard() {
-  if (!meta.value) return
+  if (!meta?.value) return
   await saveBoard()
   const blob = new Blob([JSON.stringify(meta.value, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -83,48 +39,30 @@ async function handleExportCurrentBoard() {
 function goBack() {
   window.close()
 }
-
-let timer: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-  init()
-  timer = setInterval(() => {
-    if (dirty.value) {
-      saveBoard()
-    }
-  }, 3000)
-})
-
-onBeforeUnmount(() => {
-  if (timer) {
-    clearInterval(timer)
-  }
-  saveBoard()
-})
 </script>
 
 <template>
   <div class="editor-root">
     <header class="editor-topbar">
-      <button class="btn" @click="goBack">返回</button>
+      <button class="btn" @click="goBack">{{ t('back') }}</button>
       <div class="editor-topbar__center">
-        <div class="editor-topbar__title">{{ meta?.title ?? '白板编辑器' }}</div>
-        <div class="editor-topbar__sub">创建时间：{{ meta ? new Date(meta.createdAt).toLocaleString() : '-' }}</div>
+        <div class="editor-topbar__title">{{ meta?.title ?? t('editor') }}</div>
+        <div class="editor-topbar__sub">{{ t('created') }}：{{ meta ? new Date(meta.createdAt).toLocaleString() : '-' }}</div>
       </div>
       <div class="editor-topbar__actions">
-        <span class="save-tag">{{ saving ? '保存中...' : dirty ? '有未保存更改' : '已保存' }}</span>
-        <button class="btn" @click="saveBoard">手动保存</button>
-        <button class="btn" @click="handleExportCurrentBoard">导出白板</button>
+        <span class="save-tag">{{ saving ? t('saving') : dirty ? t('unsaved') : t('saved') }}</span>
+        <button class="btn" :disabled="saving" @click="saveBoard">{{ t('manualSave') }}</button>
+        <button class="btn" @click="handleExportCurrentBoard">{{ t('exportBoard') }}</button>
       </div>
     </header>
 
     <section class="canvas-area">
-      <div v-if="loading" class="status-box">正在加载白板...</div>
-      <div v-else-if="error" class="error-box">
-        <div>{{ error }}</div>
-        <button class="btn" @click="goBack">关闭页面</button>
+      <div v-if="error || (!boardId && !loading)" class="error-box">
+        <div>{{ error || t('noBoardParam') }}</div>
+        <button class="btn" @click="goBack">{{ t('closePage') }}</button>
       </div>
-      <TldrawVueBridge v-if="!loading && !error" :snapshot="currentSnapshot" @mount="handleMount" />
+      <div v-else-if="loading" class="status-box">{{ t('loading') }}</div>
+      <TldrawVueBridge v-else-if="boardId" :snapshot="currentSnapshot" @mount="handleMount" />
     </section>
   </div>
 </template>

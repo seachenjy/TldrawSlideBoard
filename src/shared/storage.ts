@@ -1,4 +1,4 @@
-import { createStore, get, set, del, entries, clear } from 'idb-keyval'
+import { createStore, get, set, del, entries, setMany, keys, clear } from 'idb-keyval'
 import type { BoardMeta } from './types'
 
 const metaStore = createStore('tldraw-board-meta', 'board-meta')
@@ -30,11 +30,11 @@ export async function getBoardMeta(boardId: string): Promise<BoardMeta | undefin
   return get<BoardMeta>(boardId, metaStore)
 }
 
-export async function createBoard(): Promise<BoardMeta> {
+export async function createBoard(title = 'Untitled board'): Promise<BoardMeta> {
   const now = Date.now()
   const meta: BoardMeta = {
     id: uid(),
-    title: '未命名白板',
+    title,
     createdAt: now,
     updatedAt: now,
     dateKey: toDateKey(new Date(now)),
@@ -65,15 +65,24 @@ export async function importAll(payload: Record<string, unknown>, mode: 'merge' 
   const boards = (payload.boards ?? {}) as Record<string, BoardMeta>
 
   if (mode === 'overwrite') {
-    await clear(metaStore)
+    const existKeys = await keys(metaStore)
+    const purgeKeys = existKeys.filter((k) => !(String(k) in boards))
+    await Promise.all([clear(metaStore), ...purgeKeys.map((k) => del(k as string, metaStore))])
   }
 
-  for (const [key, value] of Object.entries(boards)) {
-    if (mode === 'merge') {
-      const exists = await get(key, metaStore)
-      if (exists) continue
+  if (mode === 'merge') {
+    const existKeys = await keys(metaStore)
+    const existSet = new Set(existKeys.map((k) => String(k)))
+    const newEntries = Object.entries(boards).filter(([key]) => !existSet.has(key))
+    if (newEntries.length > 0) {
+      await setMany(newEntries, metaStore)
     }
-    await set(key, value, metaStore)
+    return
+  }
+
+  const entries_ = Object.entries(boards)
+  if (entries_.length > 0) {
+    await setMany(entries_, metaStore)
   }
 }
 

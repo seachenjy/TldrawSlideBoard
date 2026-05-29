@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, toRaw } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Plus, Download, Upload, Merge } from '@lucide/vue'
 import { useI18n } from '../shared/i18n'
-import { toDateKey, listAllMetas, listMetasByDate, deleteBoard, createBoard, exportAll, importAll, updateBoardMeta } from '../shared/storage'
+import { toDateKey, listAllMetas, deleteBoard, createBoard, exportAll, importAll, updateBoardMeta } from '../shared/storage'
 import type { BoardMeta } from '../shared/types'
 import DatePanel from './DatePanel.vue'
 import BoardList from './BoardList.vue'
@@ -10,35 +10,35 @@ import InlineEditor from './InlineEditor.vue'
 
 const { t } = useI18n()
 const selectedDate = ref(toDateKey(new Date()))
-const countMap = ref<Record<string, number>>({})
-const boards = ref<BoardMeta[]>([])
+const allMetas = ref<BoardMeta[]>([])
 const exporting = ref(false)
 const importing = ref(false)
 const editingBoardId = ref<string | null>(null)
 const importMenuOpen = ref(false)
 
-async function refreshCountMap() {
-  const all = await listAllMetas()
+const countMap = computed(() => {
   const map: Record<string, number> = {}
-  for (const m of all) {
+  for (const m of allMetas.value) {
     map[m.dateKey] = (map[m.dateKey] ?? 0) + 1
   }
-  countMap.value = map
-}
+  return map
+})
 
-async function refreshBoards() {
-  boards.value = await listMetasByDate(selectedDate.value)
+const boards = computed(() =>
+  allMetas.value.filter((m) => m.dateKey === selectedDate.value)
+)
+
+async function refreshAll() {
+  allMetas.value = await listAllMetas()
 }
 
 function selectDate(dateKey: string) {
   selectedDate.value = dateKey
-  refreshBoards()
 }
 
 async function handleCreateBoard() {
-  const meta = await createBoard()
-  await refreshCountMap()
-  await refreshBoards()
+  const meta = await createBoard(t('untitled'))
+  await refreshAll()
   editingBoardId.value = meta.id
 }
 
@@ -47,17 +47,16 @@ function openBoard(id: string) {
 }
 
 async function handleRemoveBoard(id: string) {
+  if (!confirm(t('deleteConfirm'))) return
   await deleteBoard(id)
-  await refreshCountMap()
-  await refreshBoards()
+  await refreshAll()
 }
 
 async function handleRenameBoard(id: string, title: string) {
-  const meta = boards.value.find((b) => b.id === id)
+  const meta = allMetas.value.find((b) => b.id === id)
   if (!meta) return
-  const rawMeta = { ...toRaw(meta), title, updatedAt: Date.now() }
-  await updateBoardMeta(rawMeta)
-  boards.value = boards.value.map((b) => (b.id === id ? { ...b, title } : b))
+  await updateBoardMeta({ ...meta, title, updatedAt: Date.now() })
+  allMetas.value = allMetas.value.map((b) => (b.id === id ? { ...b, title } : b))
 }
 
 async function handleExport() {
@@ -89,8 +88,7 @@ function triggerImport(mode: 'merge' | 'overwrite') {
       const text = await file.text()
       const payload = JSON.parse(text) as Record<string, unknown>
       await importAll(payload, mode)
-      await refreshCountMap()
-      await refreshBoards()
+      await refreshAll()
     } catch {
       alert(t('importFailed'))
     } finally {
@@ -102,12 +100,11 @@ function triggerImport(mode: 'merge' | 'overwrite') {
 
 function handleEditorBack() {
   editingBoardId.value = null
-  refreshBoards()
+  refreshAll()
 }
 
 onMounted(() => {
-  refreshCountMap()
-  refreshBoards()
+  refreshAll()
 })
 </script>
 
@@ -117,24 +114,24 @@ onMounted(() => {
     <header class="panel__header">
       <DatePanel :selected-date="selectedDate" :count-map="countMap" :on-select="selectDate" />
       <div class="panel__actions">
-        <button class="icon-btn" title="新建白板" @click="handleCreateBoard">
+        <button class="icon-btn" :title="t('newBoard')" @click="handleCreateBoard">
           <Plus :size="18" />
         </button>
-        <button class="icon-btn" title="全量导出" :disabled="exporting" @click="handleExport">
+        <button class="icon-btn" :title="t('exportAll')" :disabled="exporting" @click="handleExport">
           <Download :size="18" />
         </button>
         <div class="import-menu" @mouseenter="importMenuOpen = true" @mouseleave="importMenuOpen = false">
-          <button class="icon-btn" title="导入" :disabled="importing">
+          <button class="icon-btn" :title="t('import')" :disabled="importing">
             <Upload :size="18" />
           </button>
           <div v-if="importMenuOpen" class="import-menu__dropdown">
             <button class="import-option" @click="triggerImport('merge')">
               <Merge :size="14" />
-              <span>合并导入</span>
+              <span>{{ t('importMerge') }}</span>
             </button>
             <button class="import-option import-option--warn" @click="triggerImport('overwrite')">
               <Upload :size="14" />
-              <span>覆盖导入</span>
+              <span>{{ t('importOverwrite') }}</span>
             </button>
           </div>
         </div>

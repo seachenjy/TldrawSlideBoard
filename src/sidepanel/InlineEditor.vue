@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, shallowRef, toRaw } from 'vue'
+import { computed } from 'vue'
 import { ArrowLeft, Save, Check, Loader2 } from '@lucide/vue'
 import { useI18n } from '../shared/i18n'
-import { getSnapshot, type Editor } from 'tldraw'
-import { getBoardMeta, updateBoardMeta } from '../shared/storage'
-import type { BoardMeta } from '../shared/types'
+import { useAutoSave } from '../shared/useAutoSave'
 import TldrawVueBridge from '../editor/TldrawVueBridge.vue'
 
 const props = defineProps<{
@@ -16,76 +14,27 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const meta = ref<BoardMeta | null>(null)
-const loading = ref(true)
-const saving = ref(false)
-const dirty = ref(false)
-const editor = shallowRef<Editor | null>(null)
-const currentSnapshot = ref<Record<string, unknown> | null>(null)
 
-function parseSnapshot(raw?: string | null) {
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as Record<string, unknown>
-  } catch {
-    return null
-  }
-}
+const {
+  meta,
+  loading,
+  saving,
+  dirty,
+  currentSnapshot,
+  handleMount,
+  saveBoard,
+} = useAutoSave(props.boardId)
 
-async function loadBoard() {
-  loading.value = true
-  try {
-    const record = await getBoardMeta(props.boardId)
-    if (!record) return
-    meta.value = record
-    currentSnapshot.value = parseSnapshot(record.snapshot)
-  } catch {
-    // ignore
-  } finally {
-    loading.value = false
-  }
-}
-
-function handleMount(nextEditor: Editor) {
-  editor.value = nextEditor
-  nextEditor.store.listen(() => {
-    dirty.value = true
-  })
-}
-
-async function saveBoard() {
-  if (!editor.value || !meta.value || saving.value) return
-  saving.value = true
-  try {
-    const now = Date.now()
-    const snapshot = JSON.stringify(getSnapshot(editor.value.store))
-    const updated = { ...toRaw(meta.value), snapshot, updatedAt: now }
-    meta.value = updated
-    await updateBoardMeta(updated)
-    dirty.value = false
-  } finally {
-    saving.value = false
-  }
-}
+const saveIcon = computed(() => {
+  if (saving.value) return 'spinner'
+  if (dirty.value) return 'save'
+  return 'check'
+})
 
 async function handleBack() {
   await saveBoard()
   emit('back')
 }
-
-let timer: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-  loadBoard()
-  timer = setInterval(() => {
-    if (dirty.value) saveBoard()
-  }, 3000)
-})
-
-onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
-  saveBoard()
-})
 </script>
 
 <template>
@@ -100,8 +49,8 @@ onBeforeUnmount(() => {
 
       <div class="toolbar-right">
         <button class="icon-btn" :class="{ 'icon-btn--dirty': dirty }" :disabled="saving" @click="saveBoard" :title="t('save')">
-          <Loader2 v-if="saving" :size="16" class="spin" />
-          <Save v-else-if="dirty" :size="16" />
+          <Loader2 v-if="saveIcon === 'spinner'" :size="16" class="spin" />
+          <Save v-else-if="saveIcon === 'save'" :size="16" />
           <Check v-else :size="16" class="icon-check" />
         </button>
       </div>
@@ -111,7 +60,7 @@ onBeforeUnmount(() => {
       <div v-if="loading" class="status-box">
         <Loader2 :size="20" class="spin" />
       </div>
-      <TldrawVueBridge v-if="!loading" :snapshot="currentSnapshot" @mount="handleMount" />
+      <TldrawVueBridge v-else :snapshot="currentSnapshot" @mount="handleMount" />
     </div>
   </div>
 </template>

@@ -16,6 +16,8 @@ const containerRef = ref<HTMLDivElement | null>(null)
 
 const selectedCount = computed(() => props.countMap[props.selectedDate] ?? 0)
 
+const todayKey = toDateKey(new Date())
+
 const viewYear = ref(Number(props.selectedDate.slice(0, 4)))
 const viewMonth = ref(Number(props.selectedDate.slice(5, 7)) - 1)
 
@@ -30,17 +32,17 @@ const monthLabel = computed(() => {
 })
 
 const weekDays = computed(() => {
-  const base = new Date(2026, 0, 5)
+  const monday = new Date(2024, 0, 1)
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(base)
-    d.setDate(base.getDate() + i)
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
     return d.toLocaleDateString(undefined, { weekday: 'narrow' })
   })
 })
 
 const cells = computed(() => {
   const first = new Date(viewYear.value, viewMonth.value, 1)
-  const startDay = first.getDay()
+  const startDay = (first.getDay() + 6) % 7
   const daysInMonth = new Date(viewYear.value, viewMonth.value + 1, 0).getDate()
   const result: Array<{ key: string; day: number; isCurrent: boolean }> = []
 
@@ -117,7 +119,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
           :key="cell.key"
           :class="['cal__cell', {
             'cal__cell--empty': !cell.isCurrent,
-            'cal__cell--today': cell.isCurrent && cell.key === toDateKey(new Date()),
+            'cal__cell--today': cell.isCurrent && cell.key === todayKey,
             'cal__cell--selected': cell.key === selectedDate,
           }]"
           :disabled="!cell.isCurrent"
