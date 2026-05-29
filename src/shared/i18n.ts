@@ -21,6 +21,7 @@ const messages = {
     later: 'Later',
     boardCount: '{count} board(s)',
     slideCount: '{count} slide(s)',
+    goToday: 'Today',
   },
   zh: {
     newBoard: '新建白板',

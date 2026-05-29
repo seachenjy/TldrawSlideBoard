@@ -10,27 +10,24 @@ import InlineEditor from './InlineEditor.vue'
 
 const { t } = useI18n()
 const selectedDate = ref(toDateKey(new Date()))
-const dates = ref<string[]>([])
+const countMap = ref<Record<string, number>>({})
 const boards = ref<BoardMeta[]>([])
-const count = ref(0)
 const exporting = ref(false)
 const importing = ref(false)
 const editingBoardId = ref<string | null>(null)
 const importMenuOpen = ref(false)
 
-async function refreshDates() {
-  dates.value = await listDateKeys()
+async function refreshCountMap() {
+  const all = await listAllMetas()
+  const map: Record<string, number> = {}
+  for (const m of all) {
+    map[m.dateKey] = (map[m.dateKey] ?? 0) + 1
+  }
+  countMap.value = map
 }
 
 async function refreshBoards() {
   boards.value = await listMetasByDate(selectedDate.value)
-  count.value = boards.value.length
-}
-
-async function listDateKeys() {
-  const all = await listAllMetas()
-  const setKeys = new Set(all.map((item) => item.dateKey))
-  return Array.from(setKeys.values()).sort((a, b) => (a > b ? -1 : 1))
 }
 
 function selectDate(dateKey: string) {
@@ -38,14 +35,9 @@ function selectDate(dateKey: string) {
   refreshBoards()
 }
 
-function goToday() {
-  selectedDate.value = toDateKey(new Date())
-  refreshBoards()
-}
-
 async function handleCreateBoard() {
   const board = await createBoard()
-  await refreshDates()
+  await refreshCountMap()
   await refreshBoards()
   editingBoardId.value = board.meta.id
 }
@@ -56,7 +48,7 @@ function openBoard(id: string) {
 
 async function handleRemoveBoard(id: string) {
   await deleteBoard(id)
-  await refreshDates()
+  await refreshCountMap()
   await refreshBoards()
 }
 
@@ -97,7 +89,7 @@ function triggerImport(mode: 'merge' | 'overwrite') {
       const text = await file.text()
       const payload = JSON.parse(text) as Record<string, unknown>
       await importAll(payload, mode)
-      await refreshDates()
+      await refreshCountMap()
       await refreshBoards()
     } catch {
       alert(t('importFailed'))
@@ -114,7 +106,7 @@ function handleEditorBack() {
 }
 
 onMounted(() => {
-  refreshDates()
+  refreshCountMap()
   refreshBoards()
 })
 </script>
@@ -123,7 +115,7 @@ onMounted(() => {
   <InlineEditor v-if="editingBoardId" :board-id="editingBoardId" @back="handleEditorBack" />
   <div v-else class="panel">
     <header class="panel__header">
-      <DatePanel :dates="dates" :selected-date="selectedDate" :count="count" @select="selectDate" @today="goToday" />
+      <DatePanel :selected-date="selectedDate" :count-map="countMap" :on-select="selectDate" />
       <div class="panel__actions">
         <button class="icon-btn" title="新建白板" @click="handleCreateBoard">
           <Plus :size="18" />
